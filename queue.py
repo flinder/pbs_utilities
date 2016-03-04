@@ -18,7 +18,7 @@ class PBSQueue(object):
         
         # Get the job file reservior
         job_files = glob.glob(os.path.join(reservoir, job_regex))
-        self.queue = job_files
+        self.queue = job_files.sort()
 
         self.last_difference = None
 
