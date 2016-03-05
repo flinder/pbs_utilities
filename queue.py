@@ -62,10 +62,12 @@ if __name__ == "__main__":
     parser.add_argument('--user_id', dest='user_id', action='store',
                         type=str,
                         help='User id')
+    parser.add_argument('--num_jobs', dest='num_jobs', action='store', type=int,
+                        help='How many jobs should be run in parallel')
     args = parser.parse_args()
 
     # Initialize Queue monitor
-    queue = PBSQueue(args.user_id, args.job_dir, 5)
+    queue = PBSQueue(args.user_id, args.job_dir, args.num_jobs)
 
     while True:
         queue.update()
