@@ -5,11 +5,12 @@ import io
 import glob
 import time
 import argparse
+import datetime
 
 
 class PBSQueue(object):
 
-    def __init__(self, user_id, reservoir, num_jobs, job_regex=r'*.sh'):
+    def __init__(self, user_id, reservoir, num_jobs, job_regex=r'*', remove_submitted=True):
         self.split_regex = re.compile(r'\s+')
         self.status = None
         self.num_jobs = num_jobs
@@ -17,10 +18,11 @@ class PBSQueue(object):
 	self.user_id = user_id
         
         # Get the job file reservior
-        job_files = glob.glob(os.path.join(reservoir, job_regex))
-        self.queue = job_files.sort()
-
-        self.last_difference = None
+        job_files = glob.glob('../bruce_shared/text_reuse/generate_alignments/pbs_scripts/*')
+        self.queue = sorted(job_files)
+	print len(self.queue)
+        self.last_difference = 0
+	self.submitted_jobs = []
 
     def update(self):        
         # Request status through shell
@@ -31,12 +33,18 @@ class PBSQueue(object):
 
     def _submit_job(self, job_file): 
         subprocess.check_output(['qsub', job_file])
+	print "submitting {}".format(job_file)
+	self.submitted_jobs.append(job_file)
+	if remove_submitted:
+	    os.remove(job_file)
 
     def submit_jobs(self):
         self.last_difference = self.num_jobs - self.running_jobs
         c = 1
         while c <= self.last_difference:
+	    time.sleep(3)
             c += 1
+	    len(self.queue)
             self._submit_job(self.queue[0])
             self.queue.pop(0)
 
@@ -46,9 +54,13 @@ class PBSQueue(object):
         jobs = [] 
         for line in lines:
             els = self.split_regex.split(line)
-            j = {"id_": els[0], "user": els[1], "queue": els[2], "name": els[3],
-                 "status": els[9], "elapsed_time": els[10]}
-            jobs.append(j)
+            try:	
+            	j = {"id_": els[0], "user": els[1], "queue": els[2], "name": els[3],
+                 	"status": els[9], "elapsed_time": els[10]}    
+            	jobs.append(j)
+
+	    except IndexError:
+ 		pass
 
         return jobs
 
@@ -71,10 +83,13 @@ if __name__ == "__main__":
 
     while True:
         queue.update()
+	ts = time.time()
+	st = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
+
         if queue.running_jobs >= queue.num_jobs:
-            pass
+            print "[{}]: {} jobs running. No new jobs.".format(st, queue.running_jobs)
         else:
             queue.submit_jobs()
-            print "Submitted {} jobs".format(queue.last_difference)
+	    print "[{}]: {} jobs running. Submitted {} jobs".format(st, queue.running_jobs,
+                                                                queue.last_difference)
         time.sleep(600)
-
