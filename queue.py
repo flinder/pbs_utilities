@@ -23,6 +23,7 @@ class PBSQueue(object):
 	print len(self.queue)
         self.last_difference = 0
 	self.submitted_jobs = []
+	self.remove_submitted=remove_submitted
 
     def update(self):        
         # Request status through shell
@@ -35,14 +36,14 @@ class PBSQueue(object):
         subprocess.check_output(['qsub', job_file])
 	print "submitting {}".format(job_file)
 	self.submitted_jobs.append(job_file)
-	if remove_submitted:
+	if self.remove_submitted:
 	    os.remove(job_file)
 
     def submit_jobs(self):
         self.last_difference = self.num_jobs - self.running_jobs
         c = 1
         while c <= self.last_difference:
-	    time.sleep(3)
+	    time.sleep(2)
             c += 1
 	    len(self.queue)
             self._submit_job(self.queue[0])
